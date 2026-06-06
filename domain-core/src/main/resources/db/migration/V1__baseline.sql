@@ -1,0 +1,4 @@
+-- V1 baseline migration (Day 0).
+-- Intentionally empty: it establishes the Flyway schema history table so migrations are
+-- versioned from the very first commit. The real domain schema (members, tiers, the
+-- append-only ledger, and the outbox) arrives in V2 on Day 1.

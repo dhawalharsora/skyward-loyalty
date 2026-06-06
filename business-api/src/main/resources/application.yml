@@ -1,0 +1,108 @@
+spring:
+  application:
+    name: skyward-core
+
+  # Virtual threads on the REST read paths — high-throughput, low-latency talking point.
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/skyward}
+    username: ${SPRING_DATASOURCE_USERNAME:skyward}
+    password: ${SPRING_DATASOURCE_PASSWORD:skyward}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by Flyway migrations (in domain-core), never by Hibernate. Validate only.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    # Migrations live in the domain-core library (it owns the schema); they ride the classpath.
+    locations: classpath:db/migration
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      # acks=all: the broker confirms the record is durably replicated before our relay marks the
+      # outbox row published. Keys and values are plain strings (the payload is already JSON).
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: skyward-core
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+# Skyward application config (config-driven, not hardcoded).
+skyward:
+  # The outbox relay polling cadence and batch size.
+  outbox:
+    relay:
+      poll-interval-ms: 1000
+      batch-size: 100
+  # Earning campaigns. This demo campaign double-points hotel partner accruals; it deliberately does
+  # not match "flight:*", keeping flight accruals at the tier multiplier.
+  earning:
+    campaigns:
+      - name: "Hotel partner double points"
+        source-prefix: "partner:hotel"
+        multiplier: 2.0
+        bonus-points: 0
+  # Flaky-partner toggle for redemption fulfilment. Default SUCCEED; set FAIL/SLOW to force the
+  # saga's compensation path for a demo (e.g. SKYWARD_PARTNER_FULFILMENT_MODE=FAIL).
+  partner:
+    fulfilment:
+      mode: ${SKYWARD_PARTNER_FULFILMENT_MODE:SUCCEED}
+      latency-ms: 0
+      failures-before-success: 0
+  # Saga restart recovery: how often to scan, and how old a stuck saga must be before resuming it
+  # (the age filter avoids racing the live request).
+  redemption:
+    recovery:
+      poll-interval-ms: 5000
+      min-age-seconds: 60
+
+# Resilience4j policies around the partner fulfilment call (timeout + retry + circuit breaker).
+resilience4j:
+  circuitbreaker:
+    instances:
+      partnerFulfilment:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      partnerFulfilment:
+        max-attempts: 3
+        wait-duration: 50ms
+  timelimiter:
+    instances:
+      partnerFulfilment:
+        timeout-duration: 500ms
+        cancel-running-future: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui

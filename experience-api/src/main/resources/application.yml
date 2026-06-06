@@ -1,0 +1,30 @@
+server:
+  # The edge is its own deployable; default off the core (8080) and legacy (8081) so all three run locally.
+  port: ${SKYWARD_EXPERIENCE_PORT:8082}
+
+spring:
+  application:
+    name: skyward-experience
+  # Virtual threads on the edge read path — it blocks on two downstream calls (REST/SOAP), so cheap
+  # carrier-thread parking is exactly the win virtual threads give.
+  threads:
+    virtual:
+      enabled: true
+
+# Strangler routing — all config-driven so the cutover is dialled without redeploying code.
+skyward:
+  strangler:
+    # Share of members served by the legacy SOAP path; the rest go to the new domain service.
+    legacy-percent: ${SKYWARD_STRANGLER_LEGACY_PERCENT:50}
+    domain-base-url: ${SKYWARD_DOMAIN_BASE_URL:http://localhost:8080}
+    legacy-uri: ${SKYWARD_LEGACY_URI:http://localhost:8081/ws}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

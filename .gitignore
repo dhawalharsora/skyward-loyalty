@@ -1,0 +1,38 @@
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.code-workspace
+.settings/
+.classpath
+.project
+bin/
+
+# OS
+.DS_Store
+
+# Java
+*.class
+*.log
+hs_err_pid*
+
+# Local env
+.env
+*.local
+
+# Claude Code local (machine-specific) settings
+.claude/settings.local.json
+
+# Demo runtime (logs + pids)
+scripts/.run/
+
+# Local project context for Claude Code — never pushed
+CLAUDE.md

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The legacy tier service contract. In a real legacy SOA the WSDL/XSD exists first and clients are
+  generated from it; this XSD is the source of truth for the message shapes and is published as a WSDL
+  at /ws/tiers.wsdl by DefaultWsdl11Definition. The hand-written JAXB bindings mirror these elements.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="http://skyward.com/legacy/tiers"
+           targetNamespace="http://skyward.com/legacy/tiers"
+           elementFormDefault="qualified">
+
+    <xs:element name="GetMemberTierRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="memberId" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetMemberTierResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="memberId" type="xs:string"/>
+                <xs:element name="tier" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

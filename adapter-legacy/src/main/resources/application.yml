@@ -1,0 +1,17 @@
+server:
+  # The legacy service is its own deployable; default off the core's 8080 so both can run locally.
+  port: ${SKYWARD_LEGACY_PORT:8081}
+
+spring:
+  application:
+    name: skyward-legacy
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
