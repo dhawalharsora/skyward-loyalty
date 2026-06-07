@@ -14,7 +14,7 @@
 
 ---
 
-## Why this exists
+## Overview
 
 Modern airline loyalty runs on **integration**: real-time APIs, asynchronous event streams, partner
 systems, and decades-old services that have to be modernised *without* downtime. This project is a focused,
@@ -26,7 +26,7 @@ platform, and gets the *hard parts* right: crash-safety, idempotency, compensati
 cutover. Every slice is **test-first** (Testcontainers, real infrastructure) and every non-trivial decision
 is captured in an ADR.
 
-## What it demonstrates
+## Integration Patterns
 
 | Pattern | Flow | The problem it solves |
 |---|---|---|
@@ -34,7 +34,7 @@ is captured in an ADR.
 | **Orchestrated Saga + compensation** | Redemption | A multi-step transaction across a flaky partner, with no distributed transaction. |
 | **Strangler Fig** | Tier reads | Migrate a legacy SOAP service to a new microservice — incrementally and reversibly. |
 
-## See it run
+## Demo
 
 ![Skyward demo — strangler routing + accrual via transactional outbox](docs/demo.gif)
 
@@ -54,7 +54,7 @@ it matters.*
 > The third pattern — the **redemption saga with compensation** — is walked through in
 > [`docs/walkthrough.md`](docs/walkthrough.md).
 
-## Run it
+## Getting Started
 
 **Prereqs:** Docker (running), JDK 21. `curl` always; `jq` optional.
 
@@ -87,7 +87,13 @@ deployables (see the diagram above):
 Full structural + behavioural walkthrough, with code and the Java/Spring nuances:
 **[`docs/walkthrough.md`](docs/walkthrough.md)**.
 
-## Engineering decisions
+## Tech Stack
+
+Java 21 (virtual threads on read paths) · Spring Boot 3.3 (Web, Kafka, Data JPA, Validation, Actuator) ·
+Apache Kafka (KRaft, no Zookeeper) · PostgreSQL + Flyway · Resilience4j · Spring-WS (SOAP) ·
+Gradle (Kotlin DSL, multi-module) · JUnit 5 + Testcontainers · springdoc-openapi · Docker Compose.
+
+## Engineering Decisions
 
 The *why* behind the hard parts, as Architecture Decision Records:
 
@@ -100,19 +106,13 @@ consumers must be idempotent); the saga distinguishes **definite vs indeterminat
 timeout *after* fulfilment never gives the reward *and* keeps the points; strangler routing is **sticky by
 member** so the same person never flaps between systems mid-migration.
 
-## Tech stack
-
-Java 21 (virtual threads on read paths) · Spring Boot 3.3 (Web, Kafka, Data JPA, Validation, Actuator) ·
-Apache Kafka (KRaft, no Zookeeper) · PostgreSQL + Flyway · Resilience4j · Spring-WS (SOAP) ·
-Gradle (Kotlin DSL, multi-module) · JUnit 5 + Testcontainers · springdoc-openapi · Docker Compose.
-
-## Deliberately out of scope
+## Out of Scope
 
 Booking / inventory / NDC · payments · a full identity provider (a stubbed header identity is where OIDC +
 mTLS plug in) · a standalone API gateway (the Experience layer *is* the edge; a gateway sits in front in
 production) · a web UI (the "UI" is Swagger + the demo above). The focus is the three integration patterns.
 
-## What I'd add next (production hardening)
+## Roadmap
 
 Structured JSON logging + correlation IDs across the flows · Micrometer metrics + Prometheus (the
 strangler **shadow-compare mismatch rate** is the first thing I'd alert on) · a second partner adapter with
