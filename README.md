@@ -1,7 +1,7 @@
 # Skyward — Loyalty Integration Platform
 
 > An event-driven loyalty-points platform that demonstrates three production-grade integration patterns —
-> **Transactional Outbox**, an **orchestrated Saga with compensation**, and the **Strangler Fig** — in a
+> the **Transactional Outbox**, an **orchestrated Saga** with compensation, and the **Strangler Fig** — in a
 > clean, layered **Java 21 / Spring Boot 3** codebase, tested end-to-end against **real Kafka and Postgres**.
 
 ![Java 21](https://img.shields.io/badge/Java-21-orange)
@@ -21,7 +21,7 @@ systems, and decades-old services that have to be modernised *without* downtime.
 runnable showcase of exactly that — built to demonstrate **depth in Java/Spring** and **integration
 architecture judgment**, rather than breadth of features.
 
-So instead of a wide-but-shallow app, it goes deep on the three patterns that actually carry an integration
+Instead of a wide-but-shallow app, it goes deep on the three patterns that actually carry an integration
 platform, and gets the *hard parts* right: crash-safety, idempotency, compensation, and a reversible legacy
 cutover. Every slice is **test-first** (Testcontainers, real infrastructure) and every non-trivial decision
 is captured in an ADR.
@@ -38,15 +38,15 @@ is captured in an ADR.
 
 ![Skyward demo — strangler routing + accrual via transactional outbox](docs/demo.gif)
 
-*A live run (`make demo`) — no edits, no mocks. Two of the three patterns; here's what you're seeing and why
-it matters.*
+*A live run (`make demo`) — no edits, no mocks. It shows two of the three patterns — here's what you're
+seeing, and why it matters.*
 
 - **① Strangler Fig** — the same `GET /members/{id}/tier` is served for six members, and the `source`
   column shows the split: some answered by the **legacy SOAP** service (`BRONZE`), some by the **new REST**
   service (`GOLD`). Routing is **config-driven** and **sticky per member**, so you cut over a percentage of
   traffic at a time, roll back by lowering it, and every member gets a consistent answer. *Zero-downtime
   migration.*
-- **② Accrual (Outbox)** — points are earned (tier ×1.25 + campaign ×2.0 = 2500), but the balance updates
+- **② Accrual (Outbox)** — points are earned (1,000 base × 1.25 tier × 2.0 campaign = 2,500), but the balance updates
   **asynchronously**: ledger entry + event are written in **one DB transaction**, a relay publishes to
   **Kafka**, and a consumer updates the balance projection. Replaying the same accrual returns `DUPLICATE`
   — at-least-once delivery, **never double-credited.**
@@ -97,20 +97,22 @@ Gradle (Kotlin DSL, multi-module) · JUnit 5 + Testcontainers · springdoc-opena
 
 The *why* behind the hard parts, as Architecture Decision Records:
 
-- [ADR-0001 — Outbox over direct publish](docs/adr/0001-outbox-over-direct-publish.md) (incl. the Debezium CDC alternative)
+- [ADR-0001 — Outbox over direct publish](docs/adr/0001-outbox-over-direct-publish.md) (including the Debezium CDC alternative)
 - [ADR-0002 — Orchestrated saga over choreography](docs/adr/0002-orchestrated-saga.md)
 - [ADR-0003 — Strangler routing facade](docs/adr/0003-strangler-routing-facade.md)
 
 A few decisions worth calling out: the outbox relay is **at-least-once** (publish before marking sent →
 consumers must be idempotent); the saga distinguishes **definite vs indeterminate** failure so a partner
 timeout *after* fulfilment never gives the reward *and* keeps the points; strangler routing is **sticky by
-member** so the same person never flaps between systems mid-migration.
+member** so the same person never flaps between systems mid-migration; and consumers retry, then route
+poison messages to a **dead-letter topic (DLT)** — no blocked partitions, no silent loss.
 
 ## Out of Scope
 
-Booking / inventory / NDC · payments · a full identity provider (a stubbed header identity is where OIDC +
-mTLS plug in) · a standalone API gateway (the Experience layer *is* the edge; a gateway sits in front in
-production) · a web UI (the "UI" is Swagger + the demo above). The focus is the three integration patterns.
+Booking / inventory / NDC · payments · a full identity provider (requests are currently unauthenticated;
+OIDC + mTLS would sit at the edge in production) · a standalone API gateway (the Experience layer *is* the
+edge; a gateway sits in front in production) · a web UI (the "UI" is Swagger + the demo above). The focus is
+the three integration patterns.
 
 ## Roadmap
 
